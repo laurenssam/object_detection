@@ -75,7 +75,7 @@ def main():
     val_dataset = PascalVOCDataset(data_folder,
                                     split='test',
                                     keep_difficult=keep_difficult)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=2, shuffle=False,
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False,
                                               collate_fn=val_dataset.collate_fn, num_workers=workers, pin_memory=True)
 
     # Calculate total number of epochs to train and the epochs to decay learning rate at (i.e. convert iterations to epochs)
@@ -98,7 +98,8 @@ def main():
               criterion=criterion,
               optimizer=optimizer,
               epoch=epoch)
-        evaluate(val_loader, model)
+        if epoch % 10 == 0 and epoch > 0:
+            evaluate(val_loader, model)
 
         # Save checkpoint
         save_checkpoint(epoch, model, optimizer)
