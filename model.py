@@ -482,7 +482,7 @@ class SSD300(nn.Module):
                 # A torch.uint8 (byte) tensor to keep track of which predicted boxes to suppress
                 # 1 implies suppress, 0 implies don't suppress
                 suppress = torch.zeros((n_above_min_score)).bool().to(device)
-                
+
                 # Consider each box in order of decreasing scores
                 for box in range(class_decoded_locs.size(0)):
                     # If this box is already marked for suppression
@@ -499,9 +499,13 @@ class SSD300(nn.Module):
                     suppress[box] = 0
 
                 # Store only unsuppressed boxes for this class
-                image_boxes.append(class_decoded_locs[1 - suppress])
-                image_labels.append(torch.LongTensor((1 - suppress).sum().item() * [c]).to(device))
-                image_scores.append(class_scores[1 - suppress])
+                    # Store only unsuppressed boxes for this class
+                    image_boxes.append(class_decoded_locs[~suppress])
+                    image_labels.append(
+                        torch.LongTensor(
+                            (~suppress).sum().item() * [c]).to(device)
+                    )
+                    image_scores.append(class_scores[~suppress])
 
             # If no object in any class is found, store a placeholder for 'background'
             if len(image_boxes) == 0:
