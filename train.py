@@ -9,7 +9,6 @@ from utils import *
 from eval import evaluate
 
 # Data parameters
-data_folder = "/content/data/VOCdevkit"  # folder with data files
 keep_difficult = True  # use objects considered difficult to detect?
 
 # Model parameters
@@ -165,11 +164,23 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
 
 if __name__ == '__main__':
-    voc_2007 = Path("/content/data/VOCdevkit/VOC2007")
-    voc_test = Path("/content/data/VOCdevkit/VOC2007")
+    run_local = False
+    if run_local:
+        voc_2007 = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit/VOC2007")
+        voc_test = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit_test/VOC2007")
 
-    voc_2012 = Path("/content/data/VOCdevkit/VOC2012")
-    out_path = Path("/content/data/VOCdevkit")
+        voc_2012 = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit2012/VOC2012")
+        out_path = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/object_detecion/json")
+        data_folder = './json'  # folder with data files
+
+    else:
+        voc_2007 = Path("/content/data/VOCdevkit/VOC2007")
+        voc_test = Path("/content/data/VOCdevkit/VOC2007")
+
+        voc_2012 = Path("/content/data/VOCdevkit/VOC2012")
+        out_path = Path("/content/data/VOCdevkit")
+        data_folder = "/content/data/VOCdevkit"  # folder with data files
+
     out_path.mkdir(exist_ok=True)
     create_data_lists(voc_2007, voc_2012, voc_test, out_path)
     main()
