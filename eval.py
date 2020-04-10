@@ -82,6 +82,7 @@ def evaluate(test_loader, model):
     pp.pprint(APs)
 
     print('\nMean Average Precision (mAP): %.3f' % mAP)
+    model.train()
 
 
 if __name__ == '__main__':
