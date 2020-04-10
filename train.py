@@ -74,7 +74,7 @@ def main():
                                                collate_fn=train_dataset.collate_fn, num_workers=workers,
                                                pin_memory=True)  # note that we're passing the collate function here
     val_dataset = PascalVOCDataset(data_folder,
-                                    split='val',
+                                    split='test',
                                     keep_difficult=keep_difficult)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False,
                                               collate_fn=test_dataset.collate_fn, num_workers=workers, pin_memory=True)
