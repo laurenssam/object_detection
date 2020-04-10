@@ -158,11 +158,11 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
 
 if __name__ == '__main__':
-    # voc_2007 = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit/VOC2007")
-    # voc_test = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit_test/VOC2007")
-    #
-    # voc_2012 = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit2012/VOC2012")
-    # out_path = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/a-PyTorch-Tutorial-to-Object-Detection/json")
-    # out_path.mkdir(exist_ok=True)
-    # create_data_lists(voc_2007, voc_2012, voc_test, out_path)
+    voc_2007 = Path("/content/data/VOCdevkit/VOC2007")
+    voc_test = Path("/content/data/VOCdevkit/VOC2007")
+
+    voc_2012 = Path("/content/data/VOCdevkit/VOC2012")
+    out_path = Path("/content/data/VOCdevkit")
+    out_path.mkdir(exist_ok=True)
+    create_data_lists(voc_2007, voc_2012, voc_test, out_path)
     main()
