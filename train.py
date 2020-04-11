@@ -75,7 +75,7 @@ def main():
     val_dataset = PascalVOCDataset(data_folder,
                                     split='test',
                                     keep_difficult=keep_difficult)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False,
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=2, shuffle=False,
                                               collate_fn=val_dataset.collate_fn, num_workers=workers, pin_memory=True)
 
     # Calculate total number of epochs to train and the epochs to decay learning rate at (i.e. convert iterations to epochs)
@@ -83,6 +83,7 @@ def main():
     # The paper trains for 120,000 iterations with a batch size of 32, decays after 80,000 and 100,000 iterations
     epochs = iterations // (len(train_dataset) // 32)
     decay_lr_at = [it // (len(train_dataset) // 32) for it in decay_lr_at]
+    print(f"Number of training epochs: {epochs}")
 
     # Epochs
     for epoch in range(start_epoch, epochs):
@@ -98,11 +99,10 @@ def main():
               criterion=criterion,
               optimizer=optimizer,
               epoch=epoch)
-        if epoch % 10 == 0 and epoch > 0:
-            evaluate(val_loader, model)
 
         # Save checkpoint
         save_checkpoint(epoch, model, optimizer)
+    evaluate(val_loader, model)
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
@@ -166,7 +166,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
 
 if __name__ == '__main__':
-    run_local = False
+    run_local = True
     if run_local:
         voc_2007 = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit/VOC2007")
         voc_test = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit_test/VOC2007")
