@@ -92,6 +92,7 @@ def main():
         if epoch in decay_lr_at:
             adjust_learning_rate(optimizer, decay_lr_to)
 
+        save_checkpoint(epoch, model, optimizer)
 
         # One epoch's training
         train(train_loader=train_loader,
@@ -101,8 +102,6 @@ def main():
               epoch=epoch)
 
         # Save checkpoint
-        save_checkpoint(epoch, model, optimizer)
-    evaluate(val_loader, model)
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
