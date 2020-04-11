@@ -166,7 +166,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
 
 if __name__ == '__main__':
-    run_local = True
+    run_local = False
     if run_local:
         voc_2007 = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit/VOC2007")
         voc_test = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit_test/VOC2007")
