@@ -23,13 +23,6 @@ model = model.to(device)
 # Switch to eval mode
 model.eval()
 
-# Load test data
-test_dataset = PascalVOCDataset(data_folder,
-                                split='test',
-                                keep_difficult=keep_difficult)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
-                                          collate_fn=test_dataset.collate_fn, num_workers=workers, pin_memory=True)
-
 def evaluate(test_loader, model):
     """
     Evaluate.
@@ -104,5 +97,10 @@ if __name__ == '__main__':
 
     out_path.mkdir(exist_ok=True)
     create_data_lists(voc_2007, voc_2012, voc_test, out_path)
+    test_dataset = PascalVOCDataset(data_folder,
+                                    split='test',
+                                    keep_difficult=keep_difficult)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
+                                              collate_fn=test_dataset.collate_fn, num_workers=workers, pin_memory=True)
     evaluate(test_loader, model)
 
