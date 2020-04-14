@@ -68,7 +68,7 @@ def evaluate(test_loader, model):
     model.train()
 
 if __name__ == '__main__':
-    run_local = False
+    run_local = True
     if run_local:
         voc_2007 = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit/VOC2007")
         voc_test = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit_test/VOC2007")
@@ -90,8 +90,10 @@ if __name__ == '__main__':
     out_path.mkdir(exist_ok=True)
     create_data_lists(voc_2007, voc_2012, voc_test, out_path)
     test_dataset = PascalVOCDataset(data_folder,
-                                    split='test',
+                                    split='train',
                                     keep_difficult=keep_difficult)
+    test_dataset.images = test_dataset.images[:500]
+    test_dataset.objects = test_dataset.objects[:500]
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
                                               collate_fn=test_dataset.collate_fn, num_workers=workers, pin_memory=True)
     # Load model checkpoint that is to be evaluated
