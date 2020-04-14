@@ -97,6 +97,7 @@ if __name__ == '__main__':
     # Load model checkpoint that is to be evaluated
     checkpoint = torch.load(checkpoint)
     model = checkpoint['model']
+    print(f"Number of epoch trained: {checkpoint['epoch']}")
     model = model.to(device)
 
     # Switch to eval mode
