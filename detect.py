@@ -101,4 +101,4 @@ if __name__ == '__main__':
         original_image = Image.open(img_path, mode='r')
         original_image = original_image.convert('RGB')
         boxed_img = detect(original_image, min_score=0.2, max_overlap=0.5, top_k=200)
-        boxed_img.save(f"/content/gdrive/My Drive/objection_detecion/test_images/{i}.png")
+        boxed_img.save(f"/content/gdrive/My Drive/object_detection/test_images/{i}.png")
