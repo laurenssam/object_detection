@@ -97,7 +97,7 @@ if __name__ == '__main__':
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
                                               collate_fn=test_dataset.collate_fn, num_workers=workers, pin_memory=True)
     # Load model checkpoint that is to be evaluated
-    checkpoint = torch.load(checkpoint)
+    checkpoint = torch.load(checkpoint, map_location=device)
     model = checkpoint['model']
     print(f"Number of epoch trained: {checkpoint['epoch']}")
     model = model.to(device)
