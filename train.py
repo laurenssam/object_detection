@@ -29,7 +29,7 @@ grad_clip = None  # clip if gradients are exploding, which may happen at larger 
 cudnn.benchmark = True
 
 
-def main(batch_size, learning_rate, checkpoint, print_freq, run_colab, exp_name):
+def main(batch_size, learning_rate, continue_training, print_freq, run_colab, exp_name):
     """
     Training.
     """
@@ -38,7 +38,7 @@ def main(batch_size, learning_rate, checkpoint, print_freq, run_colab, exp_name)
     data_folder = create_data_lists(run_colab)
 
     # Initialize model or load checkpoint
-    if checkpoint is None:
+    if not continue_training:
         start_epoch = 0
         model = SSD300(n_classes=n_classes)
         # Initialize the optimizer, with twice the default learning rate for biases, as in the original Caffe repo
@@ -54,7 +54,7 @@ def main(batch_size, learning_rate, checkpoint, print_freq, run_colab, exp_name)
                                     lr=learning_rate, weight_decay=weight_decay)
 
     else:
-        checkpoint = torch.load(checkpoint)
+        checkpoint = torch.load(exp_name / "checkpoint_ssd300.pth.tar")
         start_epoch = checkpoint['epoch'] + 1
         print('\nLoaded checkpoint from epoch %d.\n' % start_epoch)
         model = checkpoint['model']
