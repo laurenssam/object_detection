@@ -142,6 +142,7 @@ def create_data_lists(run_colab):
 
     print('\nThere are %d test images containing a total of %d objects. Files have been saved to %s.' % (
         len(test_images), n_objects, os.path.abspath(output_folder)))
+    return output_folder
 
 
 def decimate(tensor, m):

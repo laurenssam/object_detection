@@ -10,8 +10,7 @@ def parse_train_arguments(arguments):
     parser.add_argument('--exp_name', type=Path, required=True)
     parser.add_argument('--learning_rate', type=float, default=0.001, help="Learning rate for training")
     parser.add_argument('--print_freq', type=int, default=50, help="Print every n iterations")
-    parser.add_argument('--run_local', action='store_true', dest='run_colab',
-                        help='run locally or on colab')
+    parser.add_argument('--run_colab', action='store_true', help='run locally or on colab')
     arguments = parser.parse_args(arguments)
     for k, v in vars(arguments).items():
         print("{0}: {1}".format(k, v))
