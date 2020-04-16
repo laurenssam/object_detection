@@ -551,7 +551,7 @@ class MultiBoxLoss(nn.Module):
         self.alpha = alpha
 
         self.smooth_l1 = nn.L1Loss()
-        self.cross_entropy = nn.CrossEntropyLoss(reduce=False)
+        self.cross_entropy = nn.CrossEntropyLoss(reduction='none')
 
     def forward(self, predicted_locs, predicted_scores, boxes, labels):
         """

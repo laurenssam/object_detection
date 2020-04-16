@@ -1,10 +1,13 @@
 import argparse
 import sys
+from pathlib import Path
+
 
 def parse_train_arguments(arguments):
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default= 32, help="Batch size for training")
     parser.add_argument('--checkpoint', type=str, default=None, help="If given, start training from this checkpoint")
+    parser.add_argument('--exp_name', type=Path, required=True)
     parser.add_argument('--learning_rate', type=float, default=0.001, help="Learning rate for training")
     parser.add_argument('--print_freq', type=int, default=50, help="Print every n iterations")
     parser.add_argument('--run_local', action='store_true', dest='run_colab',

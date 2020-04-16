@@ -29,10 +29,11 @@ grad_clip = None  # clip if gradients are exploding, which may happen at larger 
 cudnn.benchmark = True
 
 
-def main(batch_size, learning_rate, checkpoint, print_freq, run_colab):
+def main(batch_size, learning_rate, checkpoint, print_freq, run_colab, exp_name):
     """
     Training.
     """
+    exp_name.mkdir(exist_ok=True, parents=True)
     global start_epoch, label_map, epoch, decay_lr_at
     data_folder = create_data_lists(run_colab)
 
@@ -95,7 +96,7 @@ def main(batch_size, learning_rate, checkpoint, print_freq, run_colab):
               print_freq=print_freq)
 
         # Save checkpoint
-        save_checkpoint(epoch, model, optimizer)
+        save_checkpoint(epoch, model, optimizer, exp_name)
 
 
 
