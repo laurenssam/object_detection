@@ -50,8 +50,8 @@ def main(batch_size, learning_rate, checkpoint, print_freq, run_colab, exp_name)
                     biases.append(param)
                 else:
                     not_biases.append(param)
-        optimizer = torch.optim.SGD(params=[{'params': biases, 'lr': 2 * learning_rate}, {'params': not_biases}],
-                                    lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+        optimizer = torch.optim.Adam(params=[{'params': biases, 'lr': 2 * learning_rate}, {'params': not_biases}],
+                                    lr=learning_rate, weight_decay=weight_decay)
 
     else:
         checkpoint = torch.load(checkpoint)
