@@ -1,5 +1,7 @@
 import json
 import os
+from pathlib import Path
+
 import torch
 import random
 import xml.etree.ElementTree as ET
@@ -49,14 +51,32 @@ def parse_annotation(annotation_path):
     return {'boxes': boxes, 'labels': labels, 'difficulties': difficulties}
 
 
-def create_data_lists(voc07_path, voc12_path, voc_test_path, output_folder):
+def create_data_lists(run_colab):
     """
     Create lists of images, the bounding boxes and labels of the objects in these images, and save these to file.
 
     :param voc07_path: path to the 'VOC2007' folder
     :param voc12_path: path to the 'VOC2012' folder
     :param output_folder: folder where the JSONs must be saved
+
     """
+    if not run_colab:
+        voc07_path = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit/VOC2007")
+        voc_test_path = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit_test/VOC2007")
+
+        voc12_path = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit2012/VOC2012")
+        output_folder = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/object_detecion/json")
+
+    else:
+        voc07_path = Path("/content/data/VOCdevkit/VOC2007")
+        voc_test_path = Path("/content/data/VOCdevkit/VOC2007")
+
+        voc12_path = Path("/content/data/VOCdevkit/VOC2012")
+        output_folder = Path("/content/data/VOCdevkit")
+    output_folder.mkdir(exist_ok=True)
+    if (output_folder / 'TRAIN_images.json').exists():
+        print("Json training files already created")
+        return output_folder
     voc07_path = os.path.abspath(voc07_path)
     voc_test_path = os.path.abspath(voc_test_path)
     voc12_path = os.path.abspath(voc12_path)

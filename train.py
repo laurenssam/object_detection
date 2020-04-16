@@ -1,3 +1,4 @@
+import sys
 import time
 import torch.backends.cudnn as cudnn
 import torch.optim
@@ -6,7 +7,7 @@ import torch.utils.data
 from model import SSD300, MultiBoxLoss
 from datasets import PascalVOCDataset
 from utils import *
-from eval import evaluate
+from argparser import parse_train_arguments
 
 # Data parameters
 keep_difficult = True  # use objects considered difficult to detect?
@@ -17,12 +18,8 @@ n_classes = len(label_map)  # number of different types of objects
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Learning parameters
-checkpoint = '/content/gdrive/My Drive/checkpoint_ssd300.pth.tar'  # path to model checkpoint, None if none
-batch_size = 32  # batch size
 iterations = 120000  # number of iterations to train
 workers = 4  # number of workers for loading data in the DataLoader
-print_freq = 50  # print training status every __ batches
-lr = 1e-3  # learning rate
 decay_lr_at = [80000, 100000]  # decay learning rate after these many iterations
 decay_lr_to = 0.1  # decay learning rate to this fraction of the existing learning rate
 momentum = 0.9  # momentum
@@ -32,11 +29,12 @@ grad_clip = None  # clip if gradients are exploding, which may happen at larger 
 cudnn.benchmark = True
 
 
-def main():
+def main(batch_size, learning_rate, checkpoint, print_freq, run_colab):
     """
     Training.
     """
-    global start_epoch, label_map, epoch, checkpoint, decay_lr_at
+    global start_epoch, label_map, epoch, decay_lr_at
+    data_folder = create_data_lists(run_colab)
 
     # Initialize model or load checkpoint
     if checkpoint is None:
@@ -51,8 +49,8 @@ def main():
                     biases.append(param)
                 else:
                     not_biases.append(param)
-        optimizer = torch.optim.SGD(params=[{'params': biases, 'lr': 2 * lr}, {'params': not_biases}],
-                                    lr=lr, momentum=momentum, weight_decay=weight_decay)
+        optimizer = torch.optim.SGD(params=[{'params': biases, 'lr': 2 * learning_rate}, {'params': not_biases}],
+                                    lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 
     else:
         checkpoint = torch.load(checkpoint)
@@ -72,11 +70,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                                                collate_fn=train_dataset.collate_fn, num_workers=workers,
                                                pin_memory=True)  # note that we're passing the collate function here
-    val_dataset = PascalVOCDataset(data_folder,
-                                    split='test',
-                                    keep_difficult=keep_difficult)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=2, shuffle=False,
-                                              collate_fn=val_dataset.collate_fn, num_workers=workers, pin_memory=True)
+
 
     # Calculate total number of epochs to train and the epochs to decay learning rate at (i.e. convert iterations to epochs)
     # To convert iterations to epochs, divide iterations by the number of iterations per epoch
@@ -97,14 +91,15 @@ def main():
               model=model,
               criterion=criterion,
               optimizer=optimizer,
-              epoch=epoch)
+              epoch=epoch,
+              print_freq=print_freq)
 
         # Save checkpoint
         save_checkpoint(epoch, model, optimizer)
 
 
 
-def train(train_loader, model, criterion, optimizer, epoch):
+def train(train_loader, model, criterion, optimizer, epoch, print_freq):
     """
     One epoch's training.
 
@@ -165,23 +160,5 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
 
 if __name__ == '__main__':
-    run_local = False
-    if run_local:
-        voc_2007 = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit/VOC2007")
-        voc_test = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit_test/VOC2007")
-
-        voc_2012 = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/pascal_VOC/VOCdevkit2012/VOC2012")
-        out_path = Path("/Users/laurenssamson/Documents/Projects/Chess_notation/object_detecion/json")
-        data_folder = './json'  # folder with data files
-
-    else:
-        voc_2007 = Path("/content/data/VOCdevkit/VOC2007")
-        voc_test = Path("/content/data/VOCdevkit/VOC2007")
-
-        voc_2012 = Path("/content/data/VOCdevkit/VOC2012")
-        out_path = Path("/content/data/VOCdevkit")
-        data_folder = "/content/data/VOCdevkit"  # folder with data files
-
-    out_path.mkdir(exist_ok=True)
-    create_data_lists(voc_2007, voc_2012, voc_test, out_path)
-    main()
+    args = parse_train_arguments(sys.argv[1:])
+    main(**args)

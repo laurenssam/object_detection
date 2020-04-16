@@ -1,0 +1,30 @@
+import argparse
+import sys
+
+def parse_train_arguments(arguments):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--batch_size', type=int, default= 32, help="Batch size for training")
+    parser.add_argument('--checkpoint', type=str, default=None, help="If given, start training from this checkpoint")
+    parser.add_argument('--learning_rate', type=float, default=0.001, help="Learning rate for training")
+    parser.add_argument('--print_freq', type=int, default=50, help="Print every n iterations")
+    parser.add_argument('--run_local', action='store_true', dest='run_colab',
+                        help='run locally or on colab')
+    arguments = parser.parse_args(arguments)
+    for k, v in vars(arguments).items():
+        print("{0}: {1}".format(k, v))
+    return vars(arguments)
+
+def parse_val_arguments(arguments):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--batch_size', type=int, default= 32, help="Batch size for evaluation")
+    parser.add_argument('--checkpoint', type=str, required=True, help="What model to load for evaluation")
+    parser.add_argument('--run_colab', action='store_true', help='run locally or on colab')
+    parser.add_argument('--set', type=str, default="test", help="Run evaluation on train or test set")
+    parser.add_argument('--subset', type=int, default=0, help="Number of images to do evaluation on")
+    arguments = parser.parse_args(arguments)
+    for k, v in vars(arguments).items():
+        print("{0}: {1}".format(k, v))
+    return vars(arguments)
+
+if __name__ == "__main__":
+    result = parse_train_arguments(sys.argv[1:])
