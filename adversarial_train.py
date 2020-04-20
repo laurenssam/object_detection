@@ -51,7 +51,7 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
 
     for epoch in range(start_epoch, num_epochs):
         for j, (images, boxes, labels, _) in enumerate(train_loader):
-            images = images.to(device)
+            images, boxes, labels = images.to(device), boxes.to(device), labels.to(device)
             boxes_real, labels_real = process_boxes_and_labels(boxes, labels, num_classes, max_boxes)
             box_embedding_real = box_encoder(boxes_real)
             label_embedding_real = label_encoder(labels_real)
