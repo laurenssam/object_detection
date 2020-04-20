@@ -70,7 +70,7 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
             box_embedding_fake = box_encoder(boxes_fake)
             label_embedding_fake = label_encoder(labels_fake)
             pred_fake = adversarial_model(images, box_embedding_fake, label_embedding_fake)
-            loss_fake = loss_function(pred_fake, 1)
+            loss_fake = loss_function(pred_fake, 0)
 
             total_loss = loss_fake + loss_real
             optimizer.zero_grad()
