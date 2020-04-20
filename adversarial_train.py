@@ -41,8 +41,8 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
         adversarial_model = UNet(3, 1)
         box_encoder = Encoder(4 * max_boxes)
         label_encoder = Encoder(num_classes * max_boxes)
-        optimizer = torch.optim.SGD(list(adversarial_model.parameters()) + list(box_encoder.parameters())
-                                    + list(label_encoder.parameters()), learning_rate, momentum=0.99)
+        optimizer = torch.optim.Adam(list(adversarial_model.parameters()) + list(box_encoder.parameters())
+                                    + list(label_encoder.parameters()), learning_rate)
     box_encoder, label_encoder, adversarial_model = box_encoder.to(device), \
                                                     label_encoder.to(device), adversarial_model.to(device)
     loss_function = GANLoss('vanilla').to(device)
@@ -70,7 +70,7 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
             box_embedding_fake = box_encoder(boxes_fake)
             label_embedding_fake = label_encoder(labels_fake)
             pred_fake = adversarial_model(images, box_embedding_fake, label_embedding_fake)
-            loss_fake = loss_function(pred_fake, 0)
+            loss_fake = loss_function(pred_fake, 1)
 
             total_loss = loss_fake + loss_real
             optimizer.zero_grad()
