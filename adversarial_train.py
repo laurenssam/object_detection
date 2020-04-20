@@ -67,6 +67,7 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
                                                                                                        max_overlap=0.45,
                                                                                                        top_k=200)
             boxes_fake, labels_fake = process_boxes_and_labels(det_boxes_batch, det_labels_batch, num_classes, max_boxes)
+            boxes_fake, labels_fake = boxes_fake.to(device), labels_fake.to(device)
             box_embedding_fake = box_encoder(boxes_fake)
             label_embedding_fake = label_encoder(labels_fake)
             pred_fake = adversarial_model(images, box_embedding_fake, label_embedding_fake)
