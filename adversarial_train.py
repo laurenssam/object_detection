@@ -51,8 +51,7 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
 
     for epoch in range(start_epoch, num_epochs):
         for j, (images, boxes, labels, _) in enumerate(train_loader):
-            boxes_real, labels_real = process_boxes_and_labels(boxes, labels, num_classes, max_boxes)
-            images, boxes_real, labels_real = images.to(device), boxes_real.to(device), labels_real.to(device)
+            boxes_real, labels_real = process_boxes_and_labels(boxes, labels, num_classes, max_boxes, device)
 
             box_embedding_real = box_encoder(boxes_real)
             label_embedding_real = label_encoder(labels_real)
@@ -61,13 +60,12 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
 
             with torch.no_grad():
                 predicted_locs, predicted_scores = detection_network.forward(images)
-                det_boxes_batch, det_labels_batch, _ = detection_network.detect_objects(predicted_locs,
+                pred_boxes, pred_labels, _ = detection_network.detect_objects(predicted_locs,
                                                                                                        predicted_scores,
                                                                                                        min_score=0.2,
                                                                                                        max_overlap=0.45,
                                                                                                        top_k=200)
-            boxes_fake, labels_fake = process_boxes_and_labels(det_boxes_batch, det_labels_batch, num_classes, max_boxes)
-            boxes_fake, labels_fake = boxes_fake.to(device), labels_fake.to(device)
+            boxes_fake, labels_fake = process_boxes_and_labels(pred_boxes, pred_labels, num_classes, max_boxes, device)
             box_embedding_fake = box_encoder(boxes_fake)
             label_embedding_fake = label_encoder(labels_fake)
             pred_fake = adversarial_model(images, box_embedding_fake, label_embedding_fake)
@@ -82,6 +80,10 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
             if j % print_freq == 0:
                 print('Epoch: [{0}][{1}/{2}]\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, j, len(train_loader), loss=losses))
+                print(pred_fake)
+                print("-" * 50)
+                print(pred_real)
+                print("-" * 50)
         save_adversarial_checkpoint(epoch, adversarial_model, box_encoder, label_encoder, optimizer, exp_name)
 
 
