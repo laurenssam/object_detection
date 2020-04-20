@@ -1,11 +1,12 @@
+import sys
 from pathlib import Path
 
 import torch
 from adversarial_model import UNet, Encoder, GANLoss
+from argparser import parse_adv_train_arguments
 from datasets import PascalVOCDataset
-from utils import create_data_lists, process_boxes_and_labels, save_adversarial_checkpoint
+from utils import create_data_lists, process_boxes_and_labels, save_adversarial_checkpoint, AverageMeter
 
-run_colab = False
 keep_difficult = True
 batch_size = 8
 workers = 4
@@ -13,7 +14,7 @@ max_boxes = 37
 num_classes = 21
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def main():
+def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, print_freq, run_colab):
     # Data
     data_folder = create_data_lists(run_colab)
     train_dataset = PascalVOCDataset(data_folder,
@@ -24,24 +25,30 @@ def main():
                                                pin_memory=True)  # note that we're passing the collate function here
 
     # Networks
-    exp_name = Path(".")
-    checkpoint = exp_name / "checkpoint_ssd300.pth.tar"
-    checkpoint = torch.load(checkpoint, map_location=device)
-    print(f"Number of training epochs: {checkpoint['epoch']}")
+    checkpoint = torch.load(exp_name / "checkpoint_ssd300.pth.tar", map_location=device)
+    print(f"Number of training epochs for detection network: {checkpoint['epoch']}")
     detection_network = checkpoint['model']
-    adversarial_model = UNet(3, 1)
-    box_encoder = Encoder(4 * max_boxes)
-    label_encoder = Encoder(num_classes * max_boxes)
-
-    # Training
-    num_epochs = 10
+    if continue_training:
+        adversarial_checkpoint = torch.load(exp_name / checkpoint, map_location=device)
+        adversarial_model = adversarial_checkpoint['adversarial_model']
+        box_encoder = adversarial_checkpoint['box_encoder']
+        label_encoder = adversarial_checkpoint['label_encoder']
+        optimizer = adversarial_checkpoint['optimizer']
+        start_epoch = adversarial_checkpoint['epoch']
+        print(f"Continue training of adversarial network from epoch {start_epoch}")
+    else:
+        start_epoch = 0
+        adversarial_model = UNet(3, 1)
+        box_encoder = Encoder(4 * max_boxes)
+        label_encoder = Encoder(num_classes * max_boxes)
+        optimizer = torch.optim.SGD(list(adversarial_model.parameters()) + list(box_encoder.parameters())
+                                    + list(label_encoder.parameters()), learning_rate, momentum=0.99)
     loss_function = GANLoss('vanilla')
-    learning_rate = 0.01
-    optimizer = torch.optim.SGD(list(adversarial_model.parameters()) + list(box_encoder.parameters())
-                               + list(label_encoder.parameters()), learning_rate, momentum=0.99)
+    losses = AverageMeter()  # loss
 
-    for i in range(num_epochs):
-        for _, (images, boxes, labels, _) in enumerate(train_loader):
+
+    for epoch in range(start_epoch, num_epochs):
+        for j, (images, boxes, labels, _) in enumerate(train_loader):
             images = images.to(device)
             boxes_real, labels_real = process_boxes_and_labels(boxes, labels, num_classes, max_boxes)
             box_embedding_real = box_encoder(boxes_real)
@@ -61,14 +68,20 @@ def main():
             label_embedding_fake = label_encoder(labels_fake)
             pred_fake = adversarial_model(images, box_embedding_fake, label_embedding_fake)
             loss_fake = loss_function(pred_fake, 0)
+
             total_loss = loss_fake + loss_real
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
-            break
-        save_adversarial_checkpoint(i, adversarial_model, box_encoder, label_encoder, optimizer, exp_name)
+
+            losses.update(total_loss.item(), images.size(0))
+            if j % print_freq == 0:
+                print('Epoch: [{0}][{1}/{2}]\t'
+                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, j, len(train_loader), loss=losses))
+        save_adversarial_checkpoint(epoch, adversarial_model, box_encoder, label_encoder, optimizer, exp_name)
 
 
 
 if __name__ == "__main__":
-    main()
+    arguments = parse_adv_train_arguments(sys.argv[1:])
+    main(**arguments)
