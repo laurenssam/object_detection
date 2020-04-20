@@ -45,7 +45,7 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
                                     + list(label_encoder.parameters()), learning_rate, momentum=0.99)
     box_encoder, label_encoder, adversarial_model = box_encoder.to(device), \
                                                     label_encoder.to(device), adversarial_model.to(device)
-    loss_function = GANLoss('vanilla')
+    loss_function = GANLoss('vanilla').to(device)
     losses = AverageMeter()  # loss
 
 
