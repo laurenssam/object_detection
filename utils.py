@@ -704,6 +704,7 @@ def save_checkpoint(epoch, model, optimizer, exp_name):
     torch.save(state, path)
     print(f'Model saved for epoch {epoch} at path {path}')
 
+
 def save_adversarial_checkpoint(epoch, adversarial_model, box_encoder, label_encoder, optimizer, exp_name):
     """
     Save model checkpoint.
@@ -756,6 +757,7 @@ def clip_gradient(optimizer, grad_clip):
             if param.grad is not None:
                 param.grad.data.clamp_(-grad_clip, grad_clip)
 
+
 def one_hot_embedding(labels, num_classes):
     """Embedding labels to one-hot form.
 
@@ -769,7 +771,8 @@ def one_hot_embedding(labels, num_classes):
     y = torch.eye(num_classes)
     return y[labels]
 
-def process_boxes_and_labels(boxes, labels, num_classes, max_boxes):
+
+def process_boxes_and_labels(boxes, labels, num_classes, max_boxes, device):
     batch_size = len(boxes)
     boxes_input = torch.ones(batch_size, max_boxes, 4) * -1
     labels_input = torch.ones(batch_size, max_boxes, num_classes) * -1
@@ -778,5 +781,5 @@ def process_boxes_and_labels(boxes, labels, num_classes, max_boxes):
         labels_input[i, :len(box), :] = one_hot_embedding(labels[i], num_classes)
     boxes_input, labels_input = boxes_input.reshape(batch_size, -1), labels_input.reshape(batch_size, -1)
     assert boxes_input.shape == (batch_size, 4 * max_boxes) and labels_input.shape == (
-    batch_size, num_classes * max_boxes)
-    return boxes_input, labels_input
+        batch_size, num_classes * max_boxes)
+    return boxes_input.to(device), labels_input.to(device)
