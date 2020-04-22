@@ -5,20 +5,22 @@ import torch
 from adversarial_model import UNet, Encoder, GANLoss
 from argparser import parse_adv_train_arguments
 from datasets import PascalVOCDataset
-from utils import create_data_lists, process_boxes_and_labels, save_adversarial_checkpoint, AverageMeter
+from utils import create_data_lists, process_boxes_and_labels, save_adversarial_checkpoint, AverageMeter, \
+    create_image_with_boxes
 
 keep_difficult = True
-batch_size = 8
 workers = 4
 max_boxes = 37
 num_classes = 21
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
+
 def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, print_freq, run_colab):
     # Data
     data_folder = create_data_lists(run_colab)
     train_dataset = PascalVOCDataset(data_folder,
-                                     split='train',
+                                     split='test',
                                      keep_difficult=keep_difficult)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                                                collate_fn=train_dataset.collate_fn, num_workers=workers,
@@ -66,7 +68,10 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
                                                                                                        min_score=0.2,
                                                                                                        max_overlap=0.45,
                                                                                                        top_k=200)
+            # img_real = create_image_with_boxes(images[0], boxes[0], labels[0])
+            # img_fake = create_image_with_boxes(images[0], pred_boxes[0], pred_labels[0])
             boxes_fake, labels_fake = process_boxes_and_labels(pred_boxes, pred_labels, num_classes, max_boxes, device)
+
             box_embedding_fake = box_encoder(boxes_fake)
             label_embedding_fake = label_encoder(labels_fake)
             pred_fake = adversarial_model(images, box_embedding_fake, label_embedding_fake)
@@ -81,10 +86,6 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
             if j % print_freq == 0:
                 print('Epoch: [{0}][{1}/{2}]\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, j, len(train_loader), loss=losses))
-                print(pred_fake)
-                print("-" * 50)
-                print(pred_real)
-                print("-" * 50)
         save_adversarial_checkpoint(epoch, adversarial_model, box_encoder, label_encoder, optimizer, exp_name)
 
 

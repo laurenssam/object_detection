@@ -1,11 +1,13 @@
 import json
 import os
 from pathlib import Path
-
+from PIL import ImageDraw, ImageFont, Image
+import numpy as np
 import torch
 import random
 import xml.etree.ElementTree as ET
 import torchvision.transforms.functional as FT
+from torchvision import transforms
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -783,3 +785,59 @@ def process_boxes_and_labels(boxes, labels, num_classes, max_boxes, device):
     assert boxes_input.shape == (batch_size, 4 * max_boxes) and labels_input.shape == (
         batch_size, num_classes * max_boxes)
     return boxes_input.to(device), labels_input.to(device)
+
+def create_image_with_boxes(image, boxes, labels):
+    # Transforms
+    invTrans = transforms.Compose([transforms.Normalize(mean=[0., 0., 0.],
+                                                        std=[1 / 0.229, 1 / 0.224, 1 / 0.225]),
+                                   transforms.Normalize(mean=[-0.485, -0.456, -0.406],
+                                                        std=[1., 1., 1.]),
+                                   ])
+    image = invTrans(image).permute(1, 2, 0).numpy()
+    # Move detections to the CPU
+    det_boxes = boxes.to('cpu')
+
+
+    # Decode class integer labels
+    det_labels = [rev_label_map[l] for l in labels.to('cpu').tolist()]
+
+    # If no objects found, the detected labels will be set to ['0.'], i.e. ['background'] in SSD300.detect_objects() in model.py
+    if det_labels == ['background']:
+        # Just return original image
+        return image
+
+    # Annotate
+    image_with_boxes = Image.fromarray((image * 255).astype(np.uint8))
+    draw = ImageDraw.Draw(image_with_boxes)
+    if Path("./arial.ttf").exists():
+        font_path = Path("./arial.ttf")
+    else:
+        font_path = Path("/content/gdrive/My Drive/arial.ttf")
+    font = ImageFont.truetype(str(font_path), 15)
+    original_dims = torch.FloatTensor([image_with_boxes.width, image_with_boxes.height,
+                                       image_with_boxes.width, image_with_boxes.height]).unsqueeze(0)
+    det_boxes = det_boxes * original_dims
+
+    # Suppress specific classes, if needed
+    for i in range(det_boxes.size(0)):
+        # Boxes
+        box_location = det_boxes[i].tolist()
+        draw.rectangle(xy=box_location, outline=label_color_map[det_labels[i]])
+        draw.rectangle(xy=[l + 1. for l in box_location], outline=label_color_map[
+            det_labels[i]])  # a second rectangle at an offset of 1 pixel to increase line thickness
+        # draw.rectangle(xy=[l + 2. for l in box_location], outline=label_color_map[
+        #     det_labels[i]])  # a third rectangle at an offset of 1 pixel to increase line thickness
+        # draw.rectangle(xy=[l + 3. for l in box_location], outline=label_color_map[
+        #     det_labels[i]])  # a fourth rectangle at an offset of 1 pixel to increase line thickness
+
+        # Text
+        text_size = font.getsize(det_labels[i].upper())
+        text_location = [box_location[0] + 2., box_location[1] - text_size[1]]
+        textbox_location = [box_location[0], box_location[1] - text_size[1], box_location[0] + text_size[0] + 4.,
+                            box_location[1]]
+        draw.rectangle(xy=textbox_location, fill=label_color_map[det_labels[i]])
+        draw.text(xy=text_location, text=det_labels[i].upper(), fill='white',
+                  font=font)
+    del draw
+
+    return image_with_boxes
