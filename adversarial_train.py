@@ -52,8 +52,8 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
             images = images.to(device)
             image_embedding = image_encoder(images)
             random_box_indices = [np.random.randint(len(box)) for box in boxes]
-            random_boxes = torch.stack([box[random_box_indices[i]] for i, box in enumerate(boxes)])
-            random_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(labels)])
+            random_boxes = torch.stack([box[random_box_indices[i]] for i, box in enumerate(boxes)]).to(device)
+            random_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(labels)]).to(device)
             pred_real = discriminator(random_boxes, random_labels, image_embedding)
             loss_real = loss_function(pred_real, 1)
 
@@ -65,8 +65,8 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
                                                                                                        max_overlap=0.45,
                                                                                                        top_k=200)
             random_box_indices = [np.random.randint(len(box)) for box in pred_boxes]
-            random_fake_boxes = torch.stack([box[random_box_indices[i]] for i, box in enumerate(pred_boxes)])
-            random_fake_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(pred_labels)])
+            random_fake_boxes = torch.stack([box[random_box_indices[i]] for i, box in enumerate(pred_boxes)]).to(device)
+            random_fake_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(pred_labels)]).to(device)
             pred_fake = discriminator(random_fake_boxes, random_fake_labels, image_embedding)
             loss_fake = loss_function(pred_fake, 0)
 
