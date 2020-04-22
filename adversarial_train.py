@@ -6,6 +6,7 @@ import torch
 from adversarial_model import UNet, GANLoss, Discriminator
 from argparser import parse_adv_train_arguments
 from datasets import PascalVOCDataset
+from model import VGGBase
 from utils import create_data_lists, process_boxes_and_labels, save_adversarial_checkpoint, AverageMeter, \
     create_image_with_boxes, one_hot_embedding
 
@@ -39,9 +40,9 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
         print(f"Continue training of adversarial network from epoch {start_epoch}")
     else:
         start_epoch = 0
-        image_encoder = UNet(3, 1)
+        image_encoder = VGGBase()
         discriminator = Discriminator(num_classes)
-        optimizer = torch.optim.Adam(list(discriminator.parameters()) + list(image_encoder.parameters()))
+        optimizer = torch.optim.Adam(discriminator.parameters(), lr=learning_rate, weight_decay=1e-5)
     discriminator, image_encoder = discriminator.to(device), image_encoder.to(device)
     loss_function = GANLoss('vanilla').to(device)
     losses = AverageMeter()  # loss
@@ -50,7 +51,7 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
     for epoch in range(start_epoch, num_epochs):
         for j, (images, boxes, labels, _) in enumerate(train_loader):
             images = images.to(device)
-            image_embedding = image_encoder(images)
+            _, image_embedding = image_encoder(images)
             random_box_indices = [np.random.randint(len(box)) for box in boxes]
             random_boxes = torch.stack([box[random_box_indices[i]] for i, box in enumerate(boxes)]).to(device)
             random_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(labels)]).to(device)
@@ -69,6 +70,9 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
             random_fake_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(pred_labels)]).to(device)
             pred_fake = discriminator(random_fake_boxes, random_fake_labels, image_embedding)
             loss_fake = loss_function(pred_fake, 0)
+            print(torch.mean(pred_fake), torch.std(pred_fake), "fake")
+            print(torch.mean(pred_real), torch.std(pred_real), "real")
+
 
             total_loss = loss_fake + loss_real
             optimizer.zero_grad()

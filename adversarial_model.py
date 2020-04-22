@@ -103,7 +103,7 @@ class OutConv(nn.Module):
         return self.conv(x)
 
 class Discriminator(nn.Module):
-    def __init__(self, num_classes, img_emb_dimension=41472):
+    def __init__(self, num_classes, img_emb_dimension=369664):
         super(Discriminator, self).__init__()
         self.linear1 = nn.Linear(4 + num_classes + img_emb_dimension, 800)
         self.batch1 = nn.BatchNorm1d(800)
