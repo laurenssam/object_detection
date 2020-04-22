@@ -1,12 +1,13 @@
 import sys
 from pathlib import Path
 
+import numpy as np
 import torch
-from adversarial_model import UNet, Encoder, GANLoss
+from adversarial_model import UNet, GANLoss, Discriminator
 from argparser import parse_adv_train_arguments
 from datasets import PascalVOCDataset
 from utils import create_data_lists, process_boxes_and_labels, save_adversarial_checkpoint, AverageMeter, \
-    create_image_with_boxes
+    create_image_with_boxes, one_hot_embedding
 
 keep_difficult = True
 workers = 4
@@ -32,33 +33,28 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
     detection_network = checkpoint['model']
     if continue_training:
         adversarial_checkpoint = torch.load(exp_name / checkpoint, map_location=device)
-        adversarial_model = adversarial_checkpoint['adversarial_model']
-        box_encoder = adversarial_checkpoint['box_encoder']
-        label_encoder = adversarial_checkpoint['label_encoder']
+        discriminator = adversarial_checkpoint['adversarial_model']
         optimizer = adversarial_checkpoint['optimizer']
         start_epoch = adversarial_checkpoint['epoch']
         print(f"Continue training of adversarial network from epoch {start_epoch}")
     else:
         start_epoch = 0
-        adversarial_model = UNet(3, 1)
-        box_encoder = Encoder(4 * max_boxes)
-        label_encoder = Encoder(num_classes * max_boxes)
-        optimizer = torch.optim.Adam(list(adversarial_model.parameters()) + list(box_encoder.parameters())
-                                    + list(label_encoder.parameters()), learning_rate)
-    box_encoder, label_encoder, adversarial_model = box_encoder.to(device), \
-                                                    label_encoder.to(device), adversarial_model.to(device)
+        image_encoder = UNet(3, 1)
+        discriminator = Discriminator(num_classes)
+        optimizer = torch.optim.Adam(list(discriminator.parameters()) + list(image_encoder.parameters()))
+    discriminator, image_encoder = discriminator.to(device), image_encoder.to(device)
     loss_function = GANLoss('vanilla').to(device)
     losses = AverageMeter()  # loss
 
 
     for epoch in range(start_epoch, num_epochs):
         for j, (images, boxes, labels, _) in enumerate(train_loader):
-            images = images.to(device
-                               )
-            boxes_real, labels_real = process_boxes_and_labels(boxes, labels, num_classes, max_boxes, device)
-            box_embedding_real = box_encoder(boxes_real)
-            label_embedding_real = label_encoder(labels_real)
-            pred_real = adversarial_model(images, box_embedding_real, label_embedding_real)
+            images = images.to(device)
+            image_embedding = image_encoder(images)
+            random_box_indices = [np.random.randint(len(box)) for box in boxes]
+            random_boxes = torch.stack([box[random_box_indices[i]] for i, box in enumerate(boxes)])
+            random_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(labels)])
+            pred_real = discriminator(random_boxes, random_labels, image_embedding)
             loss_real = loss_function(pred_real, 1)
 
             with torch.no_grad():
@@ -68,13 +64,10 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
                                                                                                        min_score=0.2,
                                                                                                        max_overlap=0.45,
                                                                                                        top_k=200)
-            # img_real = create_image_with_boxes(images[0], boxes[0], labels[0])
-            # img_fake = create_image_with_boxes(images[0], pred_boxes[0], pred_labels[0])
-            boxes_fake, labels_fake = process_boxes_and_labels(pred_boxes, pred_labels, num_classes, max_boxes, device)
-
-            box_embedding_fake = box_encoder(boxes_fake)
-            label_embedding_fake = label_encoder(labels_fake)
-            pred_fake = adversarial_model(images, box_embedding_fake, label_embedding_fake)
+            random_box_indices = [np.random.randint(len(box)) for box in pred_boxes]
+            random_fake_boxes = torch.stack([box[random_box_indices[i]] for i, box in enumerate(pred_boxes)])
+            random_fake_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(pred_labels)])
+            pred_fake = discriminator(random_fake_boxes, random_fake_labels, image_embedding)
             loss_fake = loss_function(pred_fake, 0)
 
             total_loss = loss_fake + loss_real
@@ -86,7 +79,7 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
             if j % print_freq == 0:
                 print('Epoch: [{0}][{1}/{2}]\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, j, len(train_loader), loss=losses))
-        save_adversarial_checkpoint(epoch, adversarial_model, box_encoder, label_encoder, optimizer, exp_name)
+        save_adversarial_checkpoint(epoch, discriminator, image_encoder, optimizer, exp_name)
 
 
 

@@ -707,7 +707,7 @@ def save_checkpoint(epoch, model, optimizer, exp_name):
     print(f'Model saved for epoch {epoch} at path {path}')
 
 
-def save_adversarial_checkpoint(epoch, adversarial_model, box_encoder, label_encoder, optimizer, exp_name):
+def save_adversarial_checkpoint(epoch, discriminator, image_encoder, optimizer, exp_name):
     """
     Save model checkpoint.
 
@@ -716,9 +716,8 @@ def save_adversarial_checkpoint(epoch, adversarial_model, box_encoder, label_enc
     :param optimizer: optimizer
     """
     state = {'epoch': epoch,
-             'adv_model': adversarial_model,
-             'box_encoder': box_encoder,
-             'label_encoder': label_encoder,
+             'discriminator': discriminator,
+             'image_encoder': image_encoder,
              'optimizer': optimizer}
     filename = 'adversarial_checkpoint.pth.tar'
     path = exp_name / filename

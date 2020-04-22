@@ -10,31 +10,25 @@ class UNet(nn.Module):
         self.n_classes = n_classes
         self.bilinear = bilinear
 
-        self.inc = DoubleConv(n_channels, 64)
-        self.down1 = Down(64, 128)
-        self.down2 = Down(128, 256)
-        self.down3 = Down(256, 512)
+        self.inc = DoubleConv(n_channels, 32)
+        self.down1 = Down(32, 64)
+        self.down2 = Down(64, 128)
+        self.down3 = Down(128, 256)
         factor = 2 if bilinear else 1
-        self.down4 = Down(512, 1024 // factor)
-        self.up1 = Up(1026, 512 // factor, bilinear)
-        self.up2 = Up(512, 256 // factor, bilinear)
-        self.up3 = Up(256, 128 // factor, bilinear)
-        self.up4 = Up(128, 64, bilinear)
-        self.outc = OutConv(64, n_classes)
+        self.down4 = Down(256, 256 // factor)
+        self.up1 = Up(256, 256 // factor, bilinear)
+        self.up2 = Up(256, 128 // factor, bilinear)
+        self.up3 = Up(128, 64 // factor, bilinear)
+        self.up4 = Up(64, 32, bilinear)
+        self.outc = OutConv(32, n_classes)
 
-    def forward(self, x, box_embedding, label_embedding):
+    def forward(self, x):
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
         x4 = self.down3(x3)
         x5 = self.down4(x4)
-        x5 = torch.cat([x5, box_embedding, label_embedding], 1)
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
-        logits = self.outc(x)
-        return logits
+        return x5.reshape(x.size(0), -1)
 
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
@@ -108,25 +102,37 @@ class OutConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
-class Encoder(nn.Module):
-    def __init__(self, input_shape):
-        super(Encoder, self).__init__()
-        self.linear1 = nn.Linear(input_shape, 400)
-        self.batch1 = nn.BatchNorm1d(400)
+class Discriminator(nn.Module):
+    def __init__(self, num_classes, img_emb_dimension=41472):
+        super(Discriminator, self).__init__()
+        self.linear1 = nn.Linear(4 + num_classes + img_emb_dimension, 800)
+        self.batch1 = nn.BatchNorm1d(800)
 
-        self.linear2 = nn.Linear(400, 324)
-        self.batch2 = nn.BatchNorm1d(324)
+        self.linear2 = nn.Linear(800, 500)
+        self.batch2 = nn.BatchNorm1d(500)
+
+        self.linear3 = nn.Linear(500, 200)
+        self.batch3 = nn.BatchNorm1d(200)
+
+        self.linear4 = nn.Linear(200, 1)
 
         self.relu = nn.ReLU()
 
-    def forward(self, input_tensor):
+    def forward(self, box, label, img_embedding):
+        input_tensor = torch.cat([box, label, img_embedding.reshape(box.size(0), -1)], dim=1)
         x = self.linear1(input_tensor)
-        x = self.relu(x)
         x = self.batch1(x)
-        x = self.linear2(x)
         x = self.relu(x)
-        out = self.batch2(x)
-        return out.reshape(-1, 18, 18).unsqueeze(dim=1) # Dimensions of embeddings of adversarial network
+
+        x = self.linear2(x)
+        x = self.batch2(x)
+        x = self.relu(x)
+
+        x = self.linear3(x)
+        x = self.batch3(x)
+        x = self.relu(x)
+
+        return self.linear4(x)
 
 class GANLoss(nn.Module):
     """Define different GAN objectives.
