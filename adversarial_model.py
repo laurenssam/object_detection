@@ -108,13 +108,13 @@ class Discriminator(nn.Module):
         self.linear1 = nn.Linear(4 + num_classes + img_emb_dimension, 800)
         self.batch1 = nn.BatchNorm1d(800)
 
-        self.linear2 = nn.Linear(800, 500)
+        self.linear2 = nn.Linear(800 + num_classes + 4, 500)
         self.batch2 = nn.BatchNorm1d(500)
 
-        self.linear3 = nn.Linear(500, 200)
+        self.linear3 = nn.Linear(500 + num_classes + 4, 200)
         self.batch3 = nn.BatchNorm1d(200)
 
-        self.linear4 = nn.Linear(200, 1)
+        self.linear4 = nn.Linear(200 + num_classes + 4, 1)
 
         self.relu = nn.ReLU()
 
@@ -124,15 +124,15 @@ class Discriminator(nn.Module):
         x = self.batch1(x)
         x = self.relu(x)
 
-        x = self.linear2(x)
+        x = self.linear2(torch.cat([x, box, label], dim=1))
         x = self.batch2(x)
         x = self.relu(x)
 
-        x = self.linear3(x)
+        x = self.linear3(torch.cat([x, box, label], dim=1))
         x = self.batch3(x)
         x = self.relu(x)
 
-        return self.linear4(x)
+        return self.linear4(torch.cat([x, box, label], dim=1))
 
 class GANLoss(nn.Module):
     """Define different GAN objectives.

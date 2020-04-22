@@ -70,9 +70,6 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
             random_fake_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(pred_labels)]).to(device)
             pred_fake = discriminator(random_fake_boxes, random_fake_labels, image_embedding)
             loss_fake = loss_function(pred_fake, 0)
-            print(torch.mean(pred_fake), torch.std(pred_fake), "fake")
-            print(torch.mean(pred_real), torch.std(pred_real), "real")
-
 
             total_loss = loss_fake + loss_real
             optimizer.zero_grad()
