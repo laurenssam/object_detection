@@ -1,14 +1,13 @@
 import sys
-from pathlib import Path
-
 import numpy as np
 import torch
 from adversarial_model import UNet, GANLoss, Discriminator
 from argparser import parse_adv_train_arguments
 from datasets import PascalVOCDataset
-from model import VGGBase
+from model import VGGBase, SSD300
 from utils import create_data_lists, process_boxes_and_labels, save_adversarial_checkpoint, AverageMeter, \
-    create_image_with_boxes, one_hot_embedding
+    create_image_with_boxes, one_hot_embedding, make_dot
+import torchviz
 
 keep_difficult = True
 workers = 4
@@ -32,6 +31,8 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
     checkpoint = torch.load(exp_name / "checkpoint_ssd300.pth.tar", map_location=device)
     print(f"Number of training epochs for detection network: {checkpoint['epoch']}")
     detection_network = checkpoint['model']
+    detection_network = SSD300(n_classes=num_classes)
+
     if continue_training:
         adversarial_checkpoint = torch.load(exp_name / checkpoint, map_location=device)
         discriminator = adversarial_checkpoint['adversarial_model']
@@ -51,7 +52,8 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
     for epoch in range(start_epoch, num_epochs):
         for j, (images, boxes, labels, _) in enumerate(train_loader):
             images = images.to(device)
-            _, image_embedding = image_encoder(images)
+            with torch.no_grad():
+                _, image_embedding = image_encoder(images)
             random_box_indices = [np.random.randint(len(box)) for box in boxes]
             random_boxes = torch.stack([box[random_box_indices[i]] for i, box in enumerate(boxes)]).to(device)
             random_labels = torch.stack([one_hot_embedding(label[random_box_indices[i]], num_classes) for i, label in enumerate(labels)]).to(device)
