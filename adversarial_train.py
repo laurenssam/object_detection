@@ -31,7 +31,7 @@ def main(batch_size, continue_training, exp_name, learning_rate, num_epochs, pri
     checkpoint = torch.load(exp_name / "checkpoint_ssd300.pth.tar", map_location=device)
     print(f"Number of training epochs for detection network: {checkpoint['epoch']}")
     detection_network = checkpoint['model']
-    detection_network = SSD300(n_classes=num_classes)
+    detection_network = SSD300(n_classes=num_classes).to(device)
 
     if continue_training:
         adversarial_checkpoint = torch.load(exp_name / checkpoint, map_location=device)
